@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Para responsive -->
+    <title>Hospital Veronessi</title>
+    <!-- Incluyendo Tailwind CSS via CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<style>
+    /* Estilos personalizados si es necesario */
+    body {
+        font-family: 'Arial', sans-serif;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+
+    }
+</style>
+
+<body class="bg-gray-100">
+
+    <!-- Navbar: Fijo en la parte superior, responsive y con enlace a cotización -->
+    <nav class="bg-blue-600 p-4 shadow-md">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <!-- Logo/Nombre del hospital -->
+            <h1 class="text-white text-2xl font-bold mb-2 md:mb-0">Hospital Veronessi</h1>
+
+            <!-- Enlaces del navbar -->
+            <ul class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                <li>
+                    <a href="pages/cotizacion.html"
+                        class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300">
+                        Cotización
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Contenido principal: Mensaje de bienvenida y imagen -->
+    <div class="container mx-auto mt-10 p-4 text-center">
+        <h2 class="text-3xl font-bold text-blue-600 mb-4">¡Bienvenida, Lic. Beatriz!</h2>
+        <!-- Imagen de la empresa, agregada debajo del mensaje -->
+        <div class="mt-6"> <!-- Margen superior para separar del texto -->
+            <img src="Fronend/img/logo.png" alt="Hospital Veronessi"
+                class="mx-auto max-w-full h-auto rounded-lg shadow-md" width="600">
+            <!-- Ancho inicial, pero se ajusta -->
+        </div>
+        <p class="text-gray-700 text-lg mb-6">
+            Estamos encantados de tenerte en Hospital Veronessi. Nuestro equipo está listo para asistirte en lo que
+            necesites. Explora nuestras opciones y no dudes en contactarnos.
+        </p>
+    </div>
+
+    <!-- Pie de página opcional -->
+    <!-- Pie de página fijo -->
+    <footer class="bg-gray-200 p-4 text-center fixed bottom-0 w-full shadow-inner">
+        <p class="text-gray-600">&copy; 2023 Hospital Veronessi. Todos los derechos reservados.</p>
+    </footer>
+
+
+</body>
+
+</html>
