@@ -181,14 +181,26 @@
         function agregarATabla(tipo, nombre, precio) {
             const tbody = document.getElementById('tabla-items').querySelector('tbody');
             const fila = document.createElement('tr');
+
             fila.innerHTML = `
-                <td class="border px-2 py-1">${tipo}</td>
-                <td class="border px-2 py-1">${nombre}</td>
-                <td class="border px-2 py-1">${precio.toFixed(2)}</td>
-            `;
+        <td class="border px-2 py-1">${tipo}</td>
+        <td class="border px-2 py-1">${nombre}</td>
+        <td class="border px-2 py-1">${precio.toFixed(2)}</td>
+    `;
+
+            // Evento para eliminar la fila al hacer clic sobre ella
+            fila.addEventListener('click', () => {
+                if (confirm(`¿Eliminar "${nombre}" de la tabla?`)) {
+                    fila.remove();      // elimina la fila
+                    actualizarTotal();  // actualiza el total
+                }
+            });
+
             tbody.appendChild(fila);
             actualizarTotal();
         }
+
+
 
         function actualizarTotal() {
             let total = 0;
@@ -260,7 +272,25 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+
     <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8 w-full max-w-lg mx-auto">
+        <!-- Navbar: Fijo en la parte superior, responsive y con enlace a cotización -->
+        <nav class="bg-blue-600 p-4 shadow-md">
+            <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+                <!-- Logo/Nombre del hospital -->
+                <h1 class="text-white text-2xl font-bold mb-2 md:mb-0">Hospital Veronessi</h1>
+
+                <!-- Enlaces del navbar -->
+                <ul class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                    <li>
+                        <a href="../index.html"
+                            class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300">
+                            Inicio
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
         <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">
             Seleccionar Cirugía, Anestesia y Medicamentos
         </h1>

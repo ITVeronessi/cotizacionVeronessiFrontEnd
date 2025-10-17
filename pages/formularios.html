@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Insumos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar: Fijo en la parte superior, responsive y con enlace a cotización -->
+    <nav class="bg-blue-600 p-4 shadow-md">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <!-- Logo/Nombre del hospital -->
+            <h1 class="text-white text-2xl font-bold mb-2 md:mb-0">Hospital Veronessi</h1>
+
+            <!-- Enlaces del navbar -->
+            <ul class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                <li>
+                    <a href="../index.html"
+                        class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300">
+                        Inicio
+                    </a>
+                </li>
+                <li>
+
+            </ul>
+        </div>
+    </nav>
+    <div class="container mx-auto p-6">
+
+        <h1 class="text-2xl font-bold mb-4">Insumos</h1>
+
+        <!-- Filtro de búsqueda -->
+        <div class="flex mb-4">
+            <input id="searchInput" type="text" placeholder="Buscar por nombre"
+                class="border rounded-l px-3 py-2 w-full">
+            <button id="btnSearch" class="bg-gray-500 hover:bg-gray-700 text-white px-4 rounded-r">
+                Buscar
+            </button>
+        </div>
+
+        <!-- Botón Agregar -->
+        <button id="btnAddInsumo" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">
+            Agregar Insumo
+        </button>
+
+        <!-- Tabla de Insumos -->
+        <table class="min-w-full bg-white rounded-lg shadow-md">
+            <thead class="bg-gray-200">
+                <tr>
+                    <th class="py-2 px-4 text-left">Nombre</th>
+                    <th class="py-2 px-4 text-left">Precio</th>
+                    <th class="py-2 px-4 text-left">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tableInsumos" class="divide-y divide-gray-200">
+                <!-- Contenido dinámico -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4"></h2>
+            <form id="modalForm" class="space-y-4">
+                <!-- Inputs dinámicos -->
+            </form>
+            <div class="flex justify-end mt-4">
+                <button id="btnCancel"
+                    class="bg-gray-400 hover:bg-gray-600 text-white py-2 px-4 rounded mr-2">Cancelar</button>
+                <button id="btnSave" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000"; // Cambia según tu backend
+        let insumosData = []; // Guardará todos los insumos
+        let currentId = null;
+
+        // ----------------- Cargar Insumos -----------------
+        async function loadInsumos() {
+            const res = await fetch(`${API_URL}/insumos/`);
+            insumosData = await res.json();
+            renderTable(insumosData);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableInsumos');
+            tbody.innerHTML = '';
+            data.forEach(i => {
+                tbody.innerHTML += `<tr class="border-b">
+            <td class="py-2 px-4">${i.nombreinsumo}</td>
+            <td class="py-2 px-4">${i.precio}</td>
+            <td class="py-2 px-4">
+                <button onclick="editInsumo(${i.idinsumos})" class="bg-green-500 text-white px-2 py-1 rounded mr-2">Editar</button>
+                <button onclick="deleteInsumo(${i.idinsumos})" class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+            </td>
+        </tr>`;
+            });
+        }
+
+        // ----------------- Editar / Agregar -----------------
+        function openModal(title, fields, data = {}) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalForm = document.getElementById('modalForm');
+
+            modalTitle.textContent = title;
+            modalForm.innerHTML = '';
+
+            fields.forEach(f => {
+                let input;
+                if (f.type === 'text' || f.type === 'number') {
+                    input = document.createElement('input');
+                    input.type = f.type;
+                    input.name = f.name;
+                    input.value = data[f.name] || '';
+                    input.className = 'w-full border rounded px-3 py-2';
+                }
+                modalForm.appendChild(createLabel(f.label, input));
+            });
+
+            modal.classList.remove('hidden');
+        }
+
+        function createLabel(text, input) {
+            const div = document.createElement('div');
+            const label = document.createElement('label');
+            label.textContent = text;
+            label.className = 'block font-semibold mb-1';
+            div.appendChild(label);
+            div.appendChild(input);
+            return div;
+        }
+
+        // ----------------- Botones Modal -----------------
+        document.getElementById('btnCancel').onclick = () => {
+            document.getElementById('modal').classList.add('hidden');
+            currentId = null;
+        };
+
+        document.getElementById('btnSave').onclick = async () => {
+            const form = document.getElementById('modalForm');
+            const formData = Object.fromEntries(new FormData(form).entries());
+
+            if (currentId) {
+                // Modificar
+                await fetch(`${API_URL}/insumos/${currentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                // Agregar
+                await fetch(`${API_URL}/insumos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+            }
+
+            document.getElementById('modal').classList.add('hidden');
+            currentId = null;
+            loadInsumos();
+        };
+
+        // ----------------- Funciones CRUD -----------------
+        document.getElementById('btnAddInsumo').onclick = () => {
+            openModal('Agregar Insumo', [
+                { label: 'Nombre', name: 'nombreinsumo', type: 'text' },
+                { label: 'Precio', name: 'precio', type: 'number' }
+            ]);
+        };
+
+        async function editInsumo(id) {
+            currentId = id;
+            const res = await fetch(`${API_URL}/insumos/${id}`);
+            const data = await res.json();
+            openModal('Editar Insumo', [
+                { label: 'Nombre', name: 'nombreinsumo', type: 'text' },
+                { label: 'Precio', name: 'precio', type: 'number' }
+            ], data);
+        }
+
+        async function deleteInsumo(id) {
+            if (confirm('¿Deseas eliminar este insumo?')) {
+                await fetch(`${API_URL}/insumos/${id}`, { method: 'DELETE' });
+                loadInsumos();
+            }
+        }
+
+        // ----------------- Filtro de búsqueda -----------------
+        document.getElementById('btnSearch').onclick = () => {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = insumosData.filter(i => i.nombreinsumo.toLowerCase().includes(searchTerm));
+            renderTable(filtered);
+        };
+
+        // ----------------- Inicializar -----------------
+        loadInsumos();
+    </script>
+
+</body>
+
+</html>

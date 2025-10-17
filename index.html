@@ -7,6 +7,8 @@
     <title>Hospital Veronessi</title>
     <!-- Incluyendo Tailwind CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 <style>
     /* Estilos personalizados si es necesario */
@@ -35,6 +37,11 @@
                         Cotización
                     </a>
                 </li>
+                <li>
+                    <a href="pages/panel.html"
+                        class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300">Panel de
+                        Control</a>
+                </li>
             </ul>
         </div>
     </nav>
@@ -54,7 +61,12 @@
             necesites. Explora nuestras opciones y no dudes en contactarnos.
         </p>
     </div>
+    <!-- Sección de Gráficos -->
 
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-center">Gráfico de Stock Actual</h3>
+        <canvas id="stockChart" width="400" height="200"></canvas>
+    </div>
     <!-- Pie de página opcional -->
     <!-- Pie de página fijo -->
     <footer class="bg-gray-200 p-4 text-center fixed bottom-0 w-full shadow-inner">
@@ -63,5 +75,45 @@
 
 
 </body>
+
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const canvas = document.getElementById('stockChart');
+        if (!canvas) {
+            console.error('No se encontró el canvas con id stockChart');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:8000/stockMedicamentos/');
+            const stock = await response.json();
+
+            new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Medicamentos', 'Anestesias', 'Insumos', 'Equipos'],
+                    datasets: [{
+                        label: 'Stock Actual (unidades)',
+                        data: [
+                            stock.total_medicamentos,
+                            stock.total_anestesias,
+                            stock.total_insumos,
+                            stock.total_equipos
+                        ],
+                        backgroundColor: ['green', 'red', 'yellow', 'blue'],
+                        borderColor: ['black', 'black', 'black', 'black'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error al cargar el stock:', error);
+        }
+    });
+</script>
 
 </html>

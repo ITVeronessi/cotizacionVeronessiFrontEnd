@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control Principal - Insumos, Medicinas y Anestecias con Gráficos</title>
+    <!-- Incluye Tailwind CSS vía CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Incluye Chart.js vía CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="font-sans bg-gray-100 min-h-screen">
+
+    <!-- Encabezado -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Panel de Control Principal</h1>
+            <nav>
+                <a href="#" class="hover:underline">Inicio</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="container mx-auto p-6">
+        <h2 class="text-xl font-semibold mb-6">Resumen de Insumos, Medicinas y Anestecias</h2>
+
+        <!-- Grid de tarjetas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+            <!-- Tarjeta de Insumos -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h3 class="text-lg font-semibold mb-2">Insumos</h3>
+                <a href="formularios.html" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Ver
+                    Detalles</a>
+            </div>
+
+            <!-- Tarjeta de Medicinas -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h3 class="text-lg font-semibold mb-2">Medicinas</h3>
+                <button class="mt-4 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">Ver Detalles</button>
+            </div>
+
+            <!-- Tarjeta de Anestecias -->
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <h3 class="text-lg font-semibold mb-2">Anestecias</h3>
+                <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">Ver Detalles</button>
+            </div>
+        </div>
+        <!--equipos-->
+        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+            <h3 class="text-lg font-semibold mb-2">Equipos</h3>
+            <p class="text-gray-600">Control de Equipos</p>
+            <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">Ver Detalles</button>
+        </div>
+
+
+    </main>
+
+
+
+</body>
+
+</html>
