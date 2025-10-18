@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cirugías - CRUD Rápido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-blue-600 text-white p-4 shadow-md text-center">
+        <h1 class="text-2xl font-bold">Gestión de Cirugías</h1>
+    </header>
+
+    <main class="p-6 max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+        <!-- Barra superior -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+            <div class="flex w-full sm:w-auto gap-2">
+                <input id="searchInput" type="text" placeholder="Buscar cirugía..."
+                    class="border px-3 py-2 rounded w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="btnAddCirugia" class="bg-green-600 hover:bg-green-800 text-white px-4 py-2 rounded">
+                + Agregar
+            </button>
+        </div>
+
+        <!-- Tabla -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse" id="tableCirugias">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-2 px-4 border-b text-left">Tipo Cirugía</th>
+                        <th class="py-2 px-4 border-b text-left">Insumo</th>
+                        <th class="py-2 px-4 border-b text-left">Medicamento</th>
+                        <th class="py-2 px-4 border-b text-left">Anestesia</th>
+                        <th class="py-2 px-4 border-b text-left">Equipo</th>
+                        <th class="py-2 px-4 border-b text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4 text-center"></h2>
+            <form id="modalForm" class="space-y-4"></form>
+            <div class="flex justify-end mt-4">
+                <button id="btnCancel"
+                    class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Cancelar</button>
+                <button id="btnSave" class="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let cirugiasData = [];
+        let currentId = null;
+
+        // ---------- CARGAR DATOS ----------
+        async function loadCirugias() {
+            const [cirugias, tipos, insumos, medicamentos, anestesias, equipos] = await Promise.all([
+                fetch(`${API_URL}/cirugia/`).then(r => r.json()),
+                fetch(`${API_URL}/tipo-cirugia/`).then(r => r.json()),
+                fetch(`${API_URL}/insumos/`).then(r => r.json()),
+                fetch(`${API_URL}/medicamentos/`).then(r => r.json()),
+                fetch(`${API_URL}/anestesia/`).then(r => r.json()),
+                fetch(`${API_URL}/equipos/`).then(r => r.json())
+            ]);
+
+            // Mapear relaciones
+            cirugiasData = cirugias.map(c => ({
+                ...c,
+                tipo: tipos.find(t => t.id_tipo_cirugia === c.id_tipo_cirugia)?.nombre || '',
+                insumo: insumos.find(i => i.idinsumo === c.idinsumos)?.nombreinsumo || '',
+                medicamento: medicamentos.find(m => m.idmedicamento === c.idmedicamentos)?.nombremedicamento || '',
+                anestesia: anestesias.find(a => a.idanestecia === c.id_anestesia)?.nombre || '',
+                equipo: equipos.find(e => e.idequipo === c.id_equipo)?.nombreequipo || ''
+            }));
+
+            renderTable(cirugiasData);
+        }
+
+        // ---------- RENDERIZAR TABLA ----------
+        function renderTable(data) {
+            const tbody = document.querySelector('#tableCirugias tbody');
+            tbody.innerHTML = '';
+            const rows = data.map(c => `
+                <tr class="hover:bg-gray-100 border-b">
+                    <td class="py-2 px-4">${c.tipo}</td>
+                    <td class="py-2 px-4">${c.insumo}</td>
+                    <td class="py-2 px-4">${c.medicamento}</td>
+                    <td class="py-2 px-4">${c.anestesia}</td>
+                    <td class="py-2 px-4">${c.equipo}</td>
+                    <td class="py-2 px-4 text-center">
+                        <button onclick="editCirugia(${c.id_cirugia})"
+                            class="w-full bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded mb-1">Editar</button>
+                        <button onclick="deleteCirugia(${c.id_cirugia})"
+                            class="w-full bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.innerHTML = rows || `<tr><td colspan="6" class="text-center py-4 text-gray-500">No hay resultados</td></tr>`;
+        }
+
+        // ---------- MODAL ----------
+        async function openModal(title, data = {}) {
+            document.getElementById('modalTitle').textContent = title;
+
+            // Cargar select dinámicos
+            const [tipos, insumos, medicamentos, anestesias, equipos] = await Promise.all([
+                fetch(`${API_URL}/tipo-cirugia/`).then(r => r.json()),
+                fetch(`${API_URL}/insumos/`).then(r => r.json()),
+                fetch(`${API_URL}/medicamentos/`).then(r => r.json()),
+                fetch(`${API_URL}/anestesia/`).then(r => r.json()),
+                fetch(`${API_URL}/equipos/`).then(r => r.json())
+            ]);
+
+            const form = document.getElementById('modalForm');
+            form.innerHTML = `
+                <div>
+                    <label class="block font-semibold mb-1">Tipo Cirugía</label>
+                    <select name="id_tipo_cirugia" class="w-full border rounded px-3 py-2" required>
+                        ${tipos.map(t => `<option value="${t.id_tipo_cirugia}" ${data.id_tipo_cirugia == t.id_tipo_cirugia ? 'selected' : ''}>${t.nombre}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Insumo</label>
+                    <select name="id_insumo" class="w-full border rounded px-3 py-2" required>
+                        ${insumos.map(i => `<option value="${i.idinsumo}" ${data.id_insumo == i.idinsumo ? 'selected' : ''}>${i.nombreinsumo}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Medicamento</label>
+                    <select name="idmedicamentos" class="w-full border rounded px-3 py-2" required>
+                        ${medicamentos.map(m => `<option value="${m.idmedicamento}" ${data.idmedicamentos == m.idmedicamento ? 'selected' : ''}>${m.nombremedicamento}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Anestesia</label>
+                    <select name="id_anestesia" class="w-full border rounded px-3 py-2" required>
+                        ${anestesias.map(a => `<option value="${a.idanestecia}" ${data.id_anestesia == a.idanestecia ? 'selected' : ''}>${a.nombre}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">Equipo</label>
+                    <select name="id_equipo" class="w-full border rounded px-3 py-2" required>
+                        ${equipos.map(e => `<option value="${e.idequipo}" ${data.id_equipo == e.idequipo ? 'selected' : ''}>${e.nombreequipo}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        document.getElementById('btnCancel').onclick = () => {
+            document.getElementById('modal').classList.add('hidden');
+            currentId = null;
+        };
+
+        // ---------- GUARDAR ----------
+        document.getElementById('btnSave').onclick = async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(document.getElementById('modalForm')).entries());
+            const url = currentId ? `${API_URL}/cirugia/${currentId}` : `${API_URL}/cirugia`;
+            const method = currentId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (res.ok) {
+                document.getElementById('modal').classList.add('hidden');
+                currentId = null;
+                loadCirugias();
+            } else {
+                alert('Error al guardar la cirugía');
+            }
+        };
+
+        // ---------- CRUD ----------
+        document.getElementById('btnAddCirugia').onclick = () => openModal('Agregar Cirugía');
+
+        async function editCirugia(id) {
+            currentId = id;
+            const res = await fetch(`${API_URL}/cirugia/${id}`);
+            const data = await res.json();
+            openModal('Editar Cirugía', data);
+        }
+
+        async function deleteCirugia(id) {
+            if (confirm('¿Seguro que deseas eliminar esta cirugía?')) {
+                await fetch(`${API_URL}/cirugia/${id}`, { method: 'DELETE' });
+                loadCirugias();
+            }
+        }
+
+        // ---------- BUSCADOR INSTANTÁNEO ----------
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounce(() => {
+            const term = searchInput.value.toLowerCase();
+            const filtered = cirugiasData.filter(c =>
+                `${c.tipo} ${c.insumo} ${c.medicamento} ${c.anestesia} ${c.equipo}`.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }, 300));
+
+        // ---------- INICIO ----------
+        loadCirugias();
+    </script>
+
+</body>
+
+</html>

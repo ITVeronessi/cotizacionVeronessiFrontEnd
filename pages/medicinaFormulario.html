@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicamentos - CRUD Rápido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-blue-600 text-white p-4 shadow-md text-center">
+        <h1 class="text-2xl font-bold">Gestión de Medicamentos</h1>
+    </header>
+
+    <main class="p-6 max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+        <!-- Barra superior -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+            <div class="flex w-full sm:w-auto gap-2">
+                <input id="searchInput" type="text" placeholder="Buscar medicamento..."
+                    class="border px-3 py-2 rounded w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="btnAddMedicamento" class="bg-green-600 hover:bg-green-800 text-white px-4 py-2 rounded">
+                + Agregar
+            </button>
+        </div>
+
+        <!-- Tabla -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse" id="tableMedicamentos">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-2 px-4 border-b text-left">Nombre</th>
+                        <th class="py-2 px-4 border-b text-left">Precio</th>
+                        <th class="py-2 px-4 border-b text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4 text-center"></h2>
+            <form id="modalForm" class="space-y-4"></form>
+            <div class="flex justify-end mt-4">
+                <button id="btnCancel"
+                    class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Cancelar</button>
+                <button id="btnSave" class="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let medicamentosData = [];
+        let currentId = null;
+
+        // ---------- CARGAR DATOS ----------
+        async function loadMedicamentos() {
+            const res = await fetch(`${API_URL}/medicamentos/`);
+            medicamentosData = await res.json();
+            renderTable(medicamentosData);
+        }
+
+        // ---------- RENDERIZAR TABLA ----------
+        function renderTable(data) {
+            const tbody = document.querySelector('#tableMedicamentos tbody');
+            tbody.innerHTML = '';
+            const rows = data.map(m => `
+        <tr class="hover:bg-gray-100 border-b">
+          <td class="py-2 px-4">${m.nombremedicamento}</td>
+          <td class="py-2 px-4">$${parseFloat(m.precio || 0).toFixed(2)}</td>
+          <td class="py-2 px-4 text-center">
+            <button onclick="editMedicamento(${m.idmedicamentos})"
+              class="bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded mr-2 w-full sm:w-auto mb-1">Editar</button>
+            <button onclick="deleteMedicamento(${m.idmedicamentos})"
+              class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded w-full sm:w-auto">Eliminar</button>
+          </td>
+        </tr>
+      `).join('');
+            tbody.innerHTML = rows || `<tr><td colspan="3" class="text-center py-4 text-gray-500">No hay resultados</td></tr>`;
+        }
+
+        // ---------- MODAL ----------
+        function openModal(title, data = {}) {
+            document.getElementById('modalTitle').textContent = title;
+            const form = document.getElementById('modalForm');
+            form.innerHTML = `
+        <div>
+          <label class="block font-semibold mb-1">Nombre</label>
+          <input type="text" name="nombremedicamento" value="${data.nombremedicamento || ''}"
+                 class="w-full border rounded px-3 py-2" required>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Precio</label>
+          <input type="number" step="0.01" name="precio" value="${data.precio || ''}"
+                 class="w-full border rounded px-3 py-2" required>
+        </div>
+      `;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        document.getElementById('btnCancel').onclick = () => {
+            document.getElementById('modal').classList.add('hidden');
+            currentId = null;
+        };
+
+        // ---------- GUARDAR ----------
+        document.getElementById('btnSave').onclick = async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(document.getElementById('modalForm')).entries());
+            const url = currentId ? `${API_URL}/medicamentos/${currentId}` : `${API_URL}/medicamentos`;
+            const method = currentId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (res.ok) {
+                document.getElementById('modal').classList.add('hidden');
+                currentId = null;
+                loadMedicamentos();
+            } else {
+                alert('Error al guardar el medicamento');
+            }
+        };
+
+        // ---------- CRUD ----------
+        document.getElementById('btnAddMedicamento').onclick = () => openModal('Agregar Medicamento');
+
+        async function editMedicamento(id) {
+            currentId = id;
+            const res = await fetch(`${API_URL}/medicamentos/${id}`);
+            const data = await res.json();
+            openModal('Editar Medicamento', data);
+        }
+
+        async function deleteMedicamento(id) {
+            if (confirm('¿Seguro que deseas eliminar este medicamento?')) {
+                await fetch(`${API_URL}/medicamentos/${id}`, { method: 'DELETE' });
+                loadMedicamentos();
+            }
+        }
+
+        // ---------- BUSCADOR INSTANTÁNEO ----------
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounce(() => {
+            const term = searchInput.value.toLowerCase();
+            const filtered = medicamentosData.filter(m =>
+                m.nombremedicamento.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }, 300));
+
+        // ---------- INICIO ----------
+        loadMedicamentos();
+    </script>
+</body>
+
+</html>

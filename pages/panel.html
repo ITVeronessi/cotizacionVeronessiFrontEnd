@@ -4,62 +4,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Control Principal - Insumos, Medicinas y Anestecias con Gráficos</title>
-    <!-- Incluye Tailwind CSS vía CDN -->
+    <title>Cirugías CRUD</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Incluye Chart.js vía CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="font-sans bg-gray-100 min-h-screen">
+<body class="bg-gray-100 font-sans">
 
-    <!-- Encabezado -->
-    <header class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Panel de Control Principal</h1>
-            <nav>
-                <a href="#" class="hover:underline">Inicio</a>
-            </nav>
-        </div>
+    <header class="bg-blue-600 text-white p-4 shadow-md text-center">
+        <h1 class="text-2xl font-bold">Gestión de Cirugías</h1>
     </header>
 
-    <!-- Contenido principal -->
-    <main class="container mx-auto p-6">
-        <h2 class="text-xl font-semibold mb-6">Resumen de Insumos, Medicinas y Anestecias</h2>
+    <main class="p-6">
 
-        <!-- Grid de tarjetas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-
-            <!-- Tarjeta de Insumos -->
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <h3 class="text-lg font-semibold mb-2">Insumos</h3>
-                <a href="formularios.html" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">Ver
-                    Detalles</a>
+        <section class="bg-white p-4 rounded-lg shadow-md">
+            <div class="flex justify-between items-center mb-4 gap-2">
+                <h2 class="text-xl font-semibold">Cirugías</h2>
+                <div class="flex gap-2">
+                    <input id="searchCirugias" type="text" placeholder="Buscar cirugía..."
+                        class="border px-3 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="btnAddCirugia"
+                        class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded">Agregar</button>
+                </div>
             </div>
-
-            <!-- Tarjeta de Medicinas -->
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <h3 class="text-lg font-semibold mb-2">Medicinas</h3>
-                <button class="mt-4 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600">Ver Detalles</button>
-            </div>
-
-            <!-- Tarjeta de Anestecias -->
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                <h3 class="text-lg font-semibold mb-2">Anestecias</h3>
-                <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">Ver Detalles</button>
-            </div>
-        </div>
-        <!--equipos-->
-        <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-            <h3 class="text-lg font-semibold mb-2">Equipos</h3>
-            <p class="text-gray-600">Control de Equipos</p>
-            <button class="mt-4 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600">Ver Detalles</button>
-        </div>
-
+            <table class="w-full text-left" id="tableCirugias">
+                <thead>
+                    <tr class="border-b">
+                        <th class="py-2">Tipo Cirugía</th>
+                        <th class="py-2">Insumo</th>
+                        <th class="py-2">Medicamento</th>
+                        <th class="py-2">Anestesia</th>
+                        <th class="py-2">Equipo</th>
+                        <th class="py-2">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
 
     </main>
 
+    <!-- Modal -->
+    <div id="modalForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg w-full max-w-lg p-6 relative">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4"></h2>
+            <form id="formModal" class="space-y-4"></form>
+            <div class="flex justify-end mt-4">
+                <button id="btnCloseModal"
+                    class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Cancelar</button>
+                <button id="btnSaveModal"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded">Guardar</button>
+            </div>
+        </div>
+    </div>
 
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const modal = document.getElementById('modalForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const formModal = document.getElementById('formModal');
+        document.getElementById('btnCloseModal').onclick = () => modal.classList.add('hidden');
+
+        let currentEntity = '';
+        let currentId = null;
+
+        // Modal dinámico
+        function openModal(entity, title, fields, data = {}) {
+            currentEntity = entity;
+            currentId = data.id || null;
+            modalTitle.innerText = title;
+            formModal.innerHTML = '';
+            fields.forEach(f => {
+                if (f.type === 'select') {
+                    let options = f.options.map(o => `<option value="${o.id}" ${data[f.name] == o.id ? 'selected' : ''}>${o.label}</option>`).join('');
+                    formModal.innerHTML += `<div>
+                <label class="block font-semibold mb-1">${f.label}</label>
+                <select name="${f.name}" class="w-full border rounded px-3 py-2">${options}</select>
+            </div>`;
+                } else {
+                    formModal.innerHTML += `<div>
+                <label class="block font-semibold mb-1">${f.label}</label>
+                <input type="${f.type}" name="${f.name}" value="${data[f.name] || ''}" class="w-full border rounded px-3 py-2">
+            </div>`;
+                }
+            });
+            modal.classList.remove('hidden');
+        }
+
+        document.getElementById('btnSaveModal').onclick = async () => {
+            const formData = {};
+            formModal.querySelectorAll('input, select').forEach(i => formData[i.name] = i.value);
+            const url = currentId ? `${API_URL}/${currentEntity}/${currentId}` : `${API_URL}/${currentEntity}`;
+            const method = currentId ? 'PUT' : 'POST';
+            await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+            modal.classList.add('hidden');
+            loadCirugias();
+        }
+
+        // Abrir modal agregar cirugía
+        document.getElementById('btnAddCirugia').onclick = async () => {
+            const [insumos, equipos, medicamentos, anestesias, tipos] = await Promise.all([
+                fetch(`${API_URL}/insumos/`).then(r => r.json()),
+                fetch(`${API_URL}/equipos/`).then(r => r.json()),
+                fetch(`${API_URL}/medicamentos/`).then(r => r.json()),
+                fetch(`${API_URL}/anestesia/`).then(r => r.json()),
+                fetch(`${API_URL}/tipo-cirugia/`).then(r => r.json()),
+            ]);
+            openModal('cirugia', 'Agregar Cirugía', [
+                { label: 'Tipo Cirugía', name: 'id_tipo_cirugia', type: 'select', options: tipos.map(t => ({ id: t.id_tipo_cirugia, label: t.nombrecirugia })) },
+                { label: 'Insumo', name: 'id_insumo', type: 'select', options: insumos.map(i => ({ id: i.idinsumo, label: i.nombreinsumo })) },
+                { label: 'Medicamento', name: 'idmedicamentos', type: 'select', options: medicamentos.map(m => ({ id: m.idmedicamento, label: m.nombremedicamento })) },
+                { label: 'Anestesia', name: 'id_anestesia', type: 'select', options: anestesias.map(a => ({ id: a.idanestecia, label: a.nombre })) },
+                { label: 'Equipo', name: 'id_equipo', type: 'select', options: equipos.map(e => ({ id: e.idequipo, label: e.nombreequipo })) },
+            ]);
+        }
+
+        // Cargar cirugías
+        async function loadCirugias() {
+            const [cirugias, tipos, insumos, medicamentos, anestesias, equipos] = await Promise.all([
+                fetch(`${API_URL}/cirugia/`).then(r => r.json()),
+                fetch(`${API_URL}/tipo-cirugia/`).then(r => r.json()),
+                fetch(`${API_URL}/insumos/`).then(r => r.json()),
+                fetch(`${API_URL}/medicamentos/`).then(r => r.json()),
+                fetch(`${API_URL}/anestesia/`).then(r => r.json()),
+                fetch(`${API_URL}/equipos/`).then(r => r.json())
+            ]);
+
+            const tbody = document.querySelector('#tableCirugias tbody');
+            tbody.innerHTML = '';
+            const searchTerm = document.getElementById('searchCirugias').value.toLowerCase();
+
+            cirugias.forEach(c => {
+                const tipo = tipos.find(t => t.id_tipo_cirugia === c.id_tipo_cirugia);
+                const insumo = insumos.find(i => i.idinsumo === c.id_insumo);
+                const med = medicamentos.find(m => m.idmedicamento === c.idmedicamentos);
+                const anest = anestesias.find(a => a.idanestecia === c.id_anestesia);
+                const equipo = equipos.find(e => e.idequipo === c.id_equipo);
+
+                const rowData = [tipo?.nombrecirugia, insumo?.nombreinsumo, med?.nombremedicamento, anest?.nombre, equipo?.nombreequipo].join(' ').toLowerCase();
+                if (!rowData.includes(searchTerm)) return;
+
+                tbody.innerHTML += `<tr class="border-b">
+            <td>${tipo?.nombrecirugia || ''}</td>
+            <td>${insumo?.nombreinsumo || ''}</td>
+            <td>${med?.nombremedicamento || ''}</td>
+            <td>${anest?.nombre || ''}</td>
+            <td>${equipo?.nombreequipo || ''}</td>
+            <td>
+                <button onclick="editEntity('cirugia',${c.id_cirugia})" class="bg-green-500 text-white px-2 py-1 rounded mr-2">Editar</button>
+                <button onclick="deleteEntity('cirugia',${c.id_cirugia})" class="bg-red-500 text-white px-2 py-1 rounded">Eliminar</button>
+            </td>
+        </tr>`;
+            });
+        }
+
+        // Editar y eliminar genérico
+        async function editEntity(entity, id) {
+            let data = await (await fetch(`${API_URL}/${entity}/${id}`)).json();
+            const [insumos, equipos, medicamentos, anestesias, tipos] = await Promise.all([
+                fetch(`${API_URL}/insumos/`).then(r => r.json()),
+                fetch(`${API_URL}/equipos/`).then(r => r.json()),
+                fetch(`${API_URL}/medicamentos/`).then(r => r.json()),
+                fetch(`${API_URL}/anestesia/`).then(r => r.json()),
+                fetch(`${API_URL}/tipo-cirugia/`).then(r => r.json())
+            ]);
+            const fields = [
+                { label: 'Tipo Cirugía', name: 'id_tipo_cirugia', type: 'select', options: tipos.map(t => ({ id: t.id_tipo_cirugia, label: t.nombrecirugia })) },
+                { label: 'Insumo', name: 'id_insumo', type: 'select', options: insumos.map(i => ({ id: i.idinsumo, label: i.nombreinsumo })) },
+                { label: 'Medicamento', name: 'idmedicamentos', type: 'select', options: medicamentos.map(m => ({ id: m.idmedicamento, label: m.nombremedicamento })) },
+                { label: 'Anestesia', name: 'id_anestesia', type: 'select', options: anestesias.map(a => ({ id: a.idanestecia, label: a.nombre })) },
+                { label: 'Equipo', name: 'id_equipo', type: 'select', options: equipos.map(e => ({ id: e.idequipo, label: e.nombreequipo })) },
+            ];
+            openModal(entity, 'Modificar', fields, data);
+        }
+
+        async function deleteEntity(entity, id) {
+            await fetch(`${API_URL}/${entity}/${id}`, { method: 'DELETE' });
+            loadCirugias();
+        }
+
+        // Filtro búsqueda
+        document.getElementById('searchCirugias').oninput = () => loadCirugias();
+
+        // Inicializar
+        loadCirugias();
+    </script>
 
 </body>
 

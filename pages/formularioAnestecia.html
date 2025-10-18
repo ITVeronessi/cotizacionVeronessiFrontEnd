@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anestesias - CRUD Conectado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-blue-600 text-white p-4 shadow-md text-center">
+        <h1 class="text-2xl font-bold">Gestión de Anestesias</h1>
+    </header>
+
+    <main class="p-6 max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+        <!-- Barra de búsqueda -->
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+            <div class="flex w-full sm:w-auto gap-2">
+                <input id="searchInput" type="text" placeholder="Buscar anestesia..."
+                    class="border px-3 py-2 rounded w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button id="btnAdd" class="bg-green-600 hover:bg-green-800 text-white px-4 py-2 rounded">+ Agregar</button>
+        </div>
+
+        <!-- Tabla -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse" id="tableAnestesias">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="py-2 px-4 border-b text-left">Nombre</th>
+                        <th class="py-2 px-4 border-b text-left">Tipo</th>
+                        <th class="py-2 px-4 border-b text-left">Precio</th>
+                        <th class="py-2 px-4 border-b text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <h2 id="modalTitle" class="text-xl font-bold mb-4 text-center"></h2>
+            <form id="modalForm" class="space-y-4"></form>
+            <div class="flex justify-end mt-4">
+                <button id="btnCancel"
+                    class="bg-gray-500 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Cancelar</button>
+                <button id="btnSave" class="bg-blue-600 hover:bg-blue-800 text-white px-4 py-2 rounded">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let anestesiasData = [];
+        let tiposAnestesia = [];
+        let currentId = null;
+
+        // ---------- CARGAR DATOS ----------
+        async function loadAnestesias() {
+            const res = await fetch(`${API_URL}/anestesia/`);
+            anestesiasData = await res.json();
+            renderTable(anestesiasData);
+        }
+
+        async function loadTiposAnestesia() {
+            const res = await fetch(`${API_URL}/tipo-anestesia/`);
+            tiposAnestesia = await res.json();
+        }
+
+        // ---------- RENDERIZAR TABLA ----------
+        function renderTable(data) {
+            const tbody = document.querySelector('#tableAnestesias tbody');
+            tbody.innerHTML = '';
+            const rows = data.map(a => {
+                const tipoObj = tiposAnestesia.find(t => t.idtipoanestesia === a.idtipoanestesia);
+                const tipoNombre = tipoObj ? tipoObj.nombre : 'Sin tipo';
+                return `
+        <tr class="hover:bg-gray-100 border-b">
+          <td class="py-2 px-4">${a.nombre}</td>
+          <td class="py-2 px-4">${tipoNombre}</td>
+          <td class="py-2 px-4">$${a.precio?.toFixed(2) ?? "0.00"}</td>
+          <td class="py-2 px-4 text-center">
+            <button onclick="editAnestesia(${a.idanestecia})" class="w-full bg-yellow-500 hover:bg-yellow-700 text-white px-2 py-1 rounded mb-1">Editar</button>
+            <button onclick="deleteAnestesia(${a.idanestecia})" class="w-full bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded">Eliminar</button>
+          </td>
+        </tr>`;
+            }).join('');
+            tbody.innerHTML = rows || `<tr><td colspan="4" class="text-center py-4 text-gray-500">No hay resultados</td></tr>`;
+        }
+
+        // ---------- MODAL ----------
+        async function openModal(title, data = {}) {
+            document.getElementById('modalTitle').textContent = title;
+            const form = document.getElementById('modalForm');
+
+            if (tiposAnestesia.length === 0) await loadTiposAnestesia();
+
+            const selectedTipo = data.idtipoanestesia ?? '';
+            const options = tiposAnestesia.map(
+                t => `<option value="${t.idtipoanestesia}" ${selectedTipo == t.idtipoanestesia ? "selected" : ""}>${t.nombre}</option>`
+            ).join('');
+
+            form.innerHTML = `
+        <div>
+          <label class="block font-semibold mb-1">Nombre</label>
+          <input type="text" name="nombre" value="${data.nombre || ''}" class="w-full border rounded px-3 py-2" required>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Precio</label>
+          <input type="number" step="0.01" name="precio" value="${data.precio || ''}" class="w-full border rounded px-3 py-2" required>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Tipo de Anestesia</label>
+          <select name="idtipoanestesia" class="w-full border rounded px-3 py-2" required>
+            <option value="">-- Selecciona tipo --</option>
+            ${options}
+          </select>
+        </div>
+      `;
+
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        document.getElementById('btnCancel').onclick = () => {
+            document.getElementById('modal').classList.add('hidden');
+            currentId = null;
+        };
+
+        // ---------- GUARDAR ----------
+        document.getElementById('btnSave').onclick = async (e) => {
+            e.preventDefault();
+            const formData = Object.fromEntries(new FormData(document.getElementById('modalForm')).entries());
+            formData.idtipoanestesia = parseInt(formData.idtipoanestesia);
+            formData.precio = parseFloat(formData.precio);
+
+            const url = currentId ? `${API_URL}/anestesia/${currentId}` : `${API_URL}/anestesia`;
+            const method = currentId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+
+            if (res.ok) {
+                document.getElementById('modal').classList.add('hidden');
+                currentId = null;
+                loadAnestesias();
+            } else {
+                alert('Error al guardar');
+            }
+        };
+
+        // ---------- CRUD ----------
+        document.getElementById('btnAdd').onclick = () => openModal('Agregar Anestesia');
+
+        async function editAnestesia(id) {
+            currentId = id;
+            const res = await fetch(`${API_URL}/anestesia/${id}`);
+            const data = await res.json();
+            openModal('Editar Anestesia', data);
+        }
+
+        async function deleteAnestesia(id) {
+            if (confirm('¿Seguro que deseas eliminar esta anestesia?')) {
+                await fetch(`${API_URL}/anestesia/${id}`, { method: 'DELETE' });
+                loadAnestesias();
+            }
+        }
+
+        // ---------- BUSCADOR INSTANTÁNEO ----------
+        function debounce(fn, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', debounce(() => {
+            const term = searchInput.value.toLowerCase();
+            const filtered = anestesiasData.filter(a =>
+                a.nombre.toLowerCase().includes(term)
+            );
+            renderTable(filtered);
+        }, 300));
+
+        // ---------- INICIO ----------
+        (async () => {
+            await loadTiposAnestesia();
+            await loadAnestesias();
+        })();
+    </script>
+</body>
+
+</html>
