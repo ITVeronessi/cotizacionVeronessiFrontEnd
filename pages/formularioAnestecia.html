@@ -9,11 +9,24 @@
 </head>
 
 <body class="bg-gray-100 font-sans">
+    <!-- Navbar: Fijo en la parte superior, responsive y con enlace a cotización -->
+    <nav class="bg-blue-600 p-4 shadow-md">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+            <!-- Logo/Nombre del hospital -->
+            <h1 class="text-white text-2xl font-bold mb-2 md:mb-0">Hospital Veronessi Gestión de Anestesias</h1>
 
-    <header class="bg-blue-600 text-white p-4 shadow-md text-center">
-        <h1 class="text-2xl font-bold">Gestión de Anestesias</h1>
-    </header>
+            <!-- Enlaces del navbar -->
+            <ul class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                <li>
+                    <a href="panel.html" class="text-white hover:bg-blue-700 px-3 py-2 rounded transition duration-300">
+                        Inicio
+                    </a>
+                </li>
+                <li>
 
+            </ul>
+        </div>
+    </nav>
     <main class="p-6 max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
         <!-- Barra de búsqueda -->
         <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
